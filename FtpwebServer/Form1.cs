@@ -37,6 +37,7 @@ namespace FtpwebServer
             textBox4.Enabled = true;
             checkup.Enabled = false;
             label4.Text = @"Downloaded 0%";
+            textBox3.Text = "ftp://94.155.50.70/web/tennislatvia.lv/public_html/.content.Xhw3x1Eb/html";
 
         }
 
@@ -135,7 +136,7 @@ namespace FtpwebServer
                 Password = textBox2.Text;
                 Server = textBox3.Text;
                 Filename = textBox4.Text;
-                path = @"C:\Users\jredondo\Documents\";
+                path = @"C:\Users\naide\source\repos\C# ТСП\FtpwebServer\FtpwebServer\bin\Debug\";
                 localdest = path + @"" + Filename;
                 Fullname = Server + @"/" + Filename;
             }
@@ -232,6 +233,25 @@ namespace FtpwebServer
                 ftpstream.Close();
 
             }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(textBox3.Text);
+            request.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+
+            request.Credentials = new NetworkCredential("AgedLinks", "b0ebcw9s9C");
+
+            FtpWebResponse response = (FtpWebResponse)request.GetResponse();
+
+            Stream responseStream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(responseStream);
+            Console.WriteLine(reader.ReadToEnd());
+
+            Console.WriteLine($"Directory List Complete, status {response.StatusDescription}");
+
+            reader.Close();
+            response.Close();
         }
     }
 }
