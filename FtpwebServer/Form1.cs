@@ -15,6 +15,7 @@ namespace FtpwebServer
 {
     public partial class Form1 : Form
     {
+        
 
         private void Form1_Load(object sender, EventArgs e)
         { }
@@ -23,6 +24,7 @@ namespace FtpwebServer
         public string Filename;
         public string Fullname;
         public string Server;
+        public string SubServer;
         public string Password;
         public string path;
         public string localdest;
@@ -37,8 +39,14 @@ namespace FtpwebServer
             textBox4.Enabled = true;
             checkup.Enabled = false;
             label4.Text = @"Downloaded 0%";
-            textBox3.Text = "ftp://94.155.50.70/web/tennislatvia.lv/public_html/.content.Xhw3x1Eb/html";
+            textBox3.Text = "ftp://94.155.50.70";
 
+            textBox1.Text = "AgedLinks";
+            textBox2.Text = "b0ebcw9s9C";
+            textBox4.Text = "structure.json";
+            textBox5.Text = "/html/";
+
+            Console.WriteLine(Directory.GetCurrentDirectory());
         }
 
 
@@ -135,10 +143,11 @@ namespace FtpwebServer
                 Username = textBox1.Text;
                 Password = textBox2.Text;
                 Server = textBox3.Text;
+                SubServer = textBox6.Text;
                 Filename = textBox4.Text;
-                path = @"C:\Users\naide\source\repos\C# ТСП\FtpwebServer\FtpwebServer\bin\Debug\";
+                path = Directory.GetCurrentDirectory() + "\\";
                 localdest = path + @"" + Filename;
-                Fullname = Server + @"/" + Filename;
+                Fullname = Server + SubServer + @"/" + Filename;
             }
 
             //Start the Background and wait a little to start it.
@@ -162,21 +171,21 @@ namespace FtpwebServer
 
             if (checkdown.Checked == true)
             {
-                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server, Filename)));
+                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server + SubServer, Filename)));
 
                 request.Credentials = new NetworkCredential(Username, Password);
                 request.Method = WebRequestMethods.Ftp.DownloadFile;  //Download Method
 
 
                 //Get some data form the source file like the zise and the TimeStamp. every data you request need to be a different request and response
-                FtpWebRequest request1 = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server, Filename)));
+                FtpWebRequest request1 = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server + SubServer, Filename)));
                 request1.Credentials = new NetworkCredential(Username, Password);
                 request1.Method = WebRequestMethods.Ftp.GetFileSize;  //GetFileze Method
                 FtpWebResponse response = (FtpWebResponse)request1.GetResponse();
                 double total = response.ContentLength;
                 response.Close();
 
-                FtpWebRequest request2 = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server, Filename)));
+                FtpWebRequest request2 = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server + SubServer, Filename)));
                 request2.Credentials = new NetworkCredential(Username, Password);
                 request2.Method = WebRequestMethods.Ftp.GetDateTimestamp; //GetTimestamp Method
                 FtpWebResponse response2 = (FtpWebResponse)request2.GetResponse();
@@ -202,14 +211,12 @@ namespace FtpwebServer
                 while (byteRead != 0);
                 ftpstream.Close();
                 fs.Close();
-
-
             }
             else
             {
 
                 //Upload Method.
-                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server, Filename)));
+                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(new Uri(string.Format("{0}/{1}", Server + SubServer, Filename)));
                 request.Method = WebRequestMethods.Ftp.UploadFile;
                 request.Credentials = new NetworkCredential(Username, Password);
                 Stream ftpstream = request.GetRequestStream();
@@ -252,6 +259,90 @@ namespace FtpwebServer
 
             reader.Close();
             response.Close();
+
+            
+        }
+
+        void DownloadFtpDirectory(string url, NetworkCredential credentials, string localPath)
+        {
+            FtpWebRequest listRequest = (FtpWebRequest)WebRequest.Create(url);
+            listRequest.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+            listRequest.Credentials = credentials;
+
+            List<string> lines = new List<string>();
+
+            using (var listResponse = (FtpWebResponse)listRequest.GetResponse())
+            using (Stream listStream = listResponse.GetResponseStream())
+            using (var listReader = new StreamReader(listStream))
+            {
+                while (!listReader.EndOfStream)
+                {
+                    lines.Add(listReader.ReadLine());
+                }
+            }
+
+            foreach (string line in lines)
+            {
+                string[] tokens =
+                    line.Split(new[] { ' ' }, 9, StringSplitOptions.RemoveEmptyEntries);
+                string name = tokens[8];
+                string permissions = tokens[0];
+
+                string localFilePath = Path.Combine(localPath, name);
+                string fileUrl = url + name;
+
+                if (permissions[0] == 'd')
+                {
+                    if (!Directory.Exists(localFilePath))
+                    {
+                        Directory.CreateDirectory(localFilePath);
+                    }
+
+                    DownloadFtpDirectory(fileUrl + "/", credentials, localFilePath);
+                }
+                else
+                {
+                    FtpWebRequest downloadRequest =
+                        (FtpWebRequest)WebRequest.Create(fileUrl);
+                    downloadRequest.Method = WebRequestMethods.Ftp.DownloadFile;
+                    downloadRequest.Credentials = credentials;
+
+                    using (FtpWebResponse downloadResponse =
+                              (FtpWebResponse)downloadRequest.GetResponse())
+                    using (Stream sourceStream = downloadResponse.GetResponseStream())
+                    using (Stream targetStream = File.Create(localFilePath))
+                    {
+                        byte[] buffer = new byte[10240];
+                        int read;
+                        while ((read = sourceStream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            targetStream.Write(buffer, 0, read);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void button3_Click_1(object sender, EventArgs e)
+        {
+            label4.Text = "Downloading";
+            backgroundWorker2.RunWorkerAsync();
+        }
+
+        private void backgroundWorker2_DoWork(object sender, DoWorkEventArgs e)
+        {
+            NetworkCredential credentials = new NetworkCredential("AgedLinks", "b0ebcw9s9C");
+            path = Directory.GetCurrentDirectory() + "/html";
+            Server = textBox3.Text;
+            Filename = textBox5.Text;
+
+            DownloadFtpDirectory(Server + SubServer + Filename, credentials, path);
+        }
+
+        private void backgroundWorker2_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            label4.Text = "Download Complete!";
+            MessageBox.Show("Download Complete!");
         }
     }
 }
