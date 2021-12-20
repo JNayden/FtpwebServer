@@ -101,6 +101,11 @@ namespace FtpwebServer
                 textBox4.Enabled = false;
                 checkdown.Enabled = false;
                 label4.Text = @"Uploaded 0%";
+
+                label3.Visible = false;
+                textBox2.Visible = false;
+                textBox5.Visible = false;
+                button3.Visible = false;
             }
         }
 
@@ -115,6 +120,11 @@ namespace FtpwebServer
                 textBox4.Enabled = true;
                 checkup.Enabled = false;
                 label4.Text = @"Downloaded 0%";
+
+                label3.Visible = true;
+                textBox2.Visible = true;
+                textBox5.Visible = true;
+                button3.Visible = true;
             }
         }
 
@@ -131,6 +141,7 @@ namespace FtpwebServer
                         Username = textBox1.Text;
                         Password = textBox2.Text;
                         Server = textBox3.Text;
+                        SubServer = textBox6.Text;
                         Filename = fi.Name;
                         Fullname = fi.FullName;
                     }
@@ -334,6 +345,7 @@ namespace FtpwebServer
             NetworkCredential credentials = new NetworkCredential("AgedLinks", "b0ebcw9s9C");
             path = Directory.GetCurrentDirectory() + "/html";
             Server = textBox3.Text;
+            SubServer = textBox6.Text;
             Filename = textBox5.Text;
 
             DownloadFtpDirectory(Server + SubServer + Filename, credentials, path);
